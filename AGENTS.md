@@ -1,15 +1,12 @@
 # Trading Lab agent rules
 
-Work in an isolated, non-custodial research system.
-
-- Do not connect to live trade-order endpoints or access 0xda-market core payments, orders, wallets, or secrets.
-- Maintain explicit provenance for source timestamps, collection timestamps, and prices. Never use future data for a historical fill.
-- Prefer deterministic simulations, Decimal money values, finite position sizing, and clear failures over optimistic performance claims.
-- Each independent change uses a feature/ or fix/ branch and one draft PR based on the latest default branch.
-- Do not commit directly to the default branch. The empty-repository LICENSE initialization was a one-time prerequisite before a branch could exist.
-- Full CI verifies correctness; deployment validation, if introduced later, checks deployment readiness without repeating Full CI.
-- Merge and deployment remain separate actions and require explicit authorization. Do not deploy automatically.
-- Add tests for any change to strategy performance or execution assumptions.
-- Follow the repo MIT LICENSE and the organization copyright-header policy.
+- This repo owns only deterministic paper replay, simulation and research; never live orders, exchange credentials, wallet or payment authority.
+- Ruby 3.3.11 and BigDecimal are the runtime contract. Keep input/output JSON documents stable across the private service boundary.
+- The existing Telegram Mini App in 0xda-market/telegram-bot hosts the user interface using 0xda-market/webapp-core; never introduce a second login or frontend here.
+- Strictly preserve collection order, source timestamps, causal fills and explicit risk limits.
+- One independent change per feature/ or fix/ branch and draft PR; never commit directly to main.
+- Run Full CI before merge. Deployment is separate and always requires explicit approval.
+- The unmerged Python Binance collector PR #2 must be ported to Ruby, not merged unchanged.
+- Follow MIT LICENSE and the copyright-header policy.
 
 © 2026 aiaiaiai · aiaiaiai.org

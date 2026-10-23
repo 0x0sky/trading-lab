@@ -1,66 +1,40 @@
 # 0xda-market Trading Lab
 
-An isolated research workspace for reproducible crypto-market signal evaluation and paper trading.
+Deterministic, **paper-only** trade replay and research service for the existing 0xda-market ecosystem.
 
-**Status:** offline, deterministic prototype. No Telegram access, exchange connectivity, credentials, live orders, real funds, or deployment are implemented.
+**Runtime:** Ruby 3.3.11, BigDecimal money math, Rack service boundary.
+**User interface:** the existing `0xda-market/webapp-core` hosted by `0xda-market/telegram-bot`; Trading Lab does not create a second UI.
+**Safety:** no live orders, account trading keys, wallet access, payment balance, exchange execution or production deployment.
 
-## Why Python?
-
-Python 3.13 gives the lab a practical foundation for event ingestion, research, simulation, and statistics. The core replay loop is standard-library-only so results are portable and easy to audit. Optimize or isolate hot paths only after profiling.
-
-## Quick start
+## Run tests and CLI
 
 ```sh
-python3.13 -m pip install -e ".[dev]"
-python -m trading_lab replay examples/demo.jsonl
-python -m unittest discover -s tests -v
-ruff check .
+bundle install
+bundle exec ruby -Itest test/replay_test.rb
+bundle exec ruby bin/trading-lab replay examples/demo.jsonl
 ```
 
-The example is **synthetic**; it is not evidence of historical returns.
+The JSONL file contains synthetic data. Records are replayed in collection order, and a signal can fill only on a later tick.
 
-## Data contract
+## Private paper replay API
 
-Read a UTF-8 JSONL stream in **collection order**, using UTC-aware ISO-8601 `received_at`:
-
-```json
-{"kind":"signal","id":"post-123","source":"channel-name","symbol":"BTCUSDT","side":"buy","received_at":"2026-10-23T10:00:00+00:00"}
-{"kind":"tick","symbol":"BTCUSDT","price":"65000","received_at":"2026-10-23T10:00:01+00:00"}
+```sh
+TRADING_LAB_SERVICE_TOKEN=local-test-only bundle exec rackup -p 9293
+curl -X POST http://127.0.0.1:9293/v1/paper/replays \
+  -H 'Authorization: Bearer local-test-only' \
+  -H 'Content-Type: application/json' \
+  -d '{"events":[]}'
 ```
 
-A signal executes only on the **first subsequent tick**, never at a prior price. Missing quotes remain pending; prices arriving more than 30 seconds later reject the signal. Duplicate (source, id) pairs and out-of-order event timestamps fail fast.
+`POST /v1/paper/replays` expects `{"events":[...],"options":{...}}` and returns `{"status":"ok","data":{...}}`.
+Up to 500 events, 64 KiB body, strict ordering, finite positive prices, unique (source, id), no future fills.
+Default settings: starting cash 1,000 USDT; notional 100; fee 10 bps; adverse slippage 5 bps; maximum 25% allocation; maximum 30-second delay.
+Result includes equity, realized/net PnL, fills, rejections, pending signals and positions; **none is a persisted real balance**.
 
-## v0 simulation rules
+### Trust boundary
 
-- One long spot position per symbol; `buy` opens and `sell` closes the full position.
-- Fixed USDT trade notional, by default 100, and maximum 25% of remaining cash per new entry.
-- Configurable fee and adverse slippage in basis points, default 10 bps and 5 bps.
-- No borrowing, leverage, shorting, funding, fill depth, latency model, or liquidation.
-- Realized PnL includes execution costs. Open-position equity uses the most recent observed mid quote and **does not** include future closing costs.
-- This is research infrastructure, not investment advice or a predictive model.
+The Telegram bot validates Telegram `initData` and resolves the actor using the existing 0xda-market Core account. Only its trusted server adapter may call Trading Lab with `TRADING_LAB_SERVICE_TOKEN`, never exposed to the browser. The service should bind to a private address; TLS is required if traffic leaves a trusted local network. This service does not authenticate users or place live orders.
 
-## Architecture boundary
-
-```text
-future read-only Telegram / exchange adapters
-                |
-         immutable event log
-                |
-        replay + paper broker
-                |
-       research / risk metrics
-                |
-      future bot / web dashboard
-```
-
-Adapters must never be allowed to place real orders in this repository's research runtime. Raw source events, timestamp provenance, and replay configuration will be persisted before any production-grade performance claims.
-
-## Next milestones
-
-1. Store immutable, source-attributed Telegram signals and market ticks in PostgreSQL with collector/clock metadata.
-2. Implement controlled, read-only Telegram and exchange adapters, plus backfill with explicit historical-data limitations.
-3. Compare multiple isolated strategies with walk-forward evaluation, portfolio drawdown, benchmark returns, execution costs, and sensitivity analysis.
-
-This package does not depend on `0xda-market/core` or access market payments, orders, and credentials.
+The paper engine is isolated from the marketplace checkout, broker liquidity, payments and settlement ledger. Exchange collectors must remain read-only and explicitly user-authorized before running. The existing Python Binance collector PR #2 **cannot be merged unchanged** after this migration; its collector contract must be ported to Ruby in a separate PR.
 
 © 2026 aiaiaiai · aiaiaiai.org

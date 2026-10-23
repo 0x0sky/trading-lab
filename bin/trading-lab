@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+# © 2026 aiaiaiai · aiaiaiai.org
+# SPDX-License-Identifier: MIT
+
+require "json"
+require "optparse"
+require_relative "../lib/zero_x_da/trading_lab/replay"
+
+options = {}
+parser = OptionParser.new do |p|
+  p.banner = "Usage: trading-lab replay PATH [options]"
+  { "starting-cash" => "starting_cash", "trade-notional" => "trade_notional", "fee-bps" => "fee_bps",
+    "slippage-bps" => "slippage_bps", "max-allocation" => "max_allocation" }.each do |flag, key|
+    p.on("--#{flag} VALUE") { |value| options[key] = value }
+  end
+  p.on("--max-delay-seconds INTEGER", Integer) { |value| options["max_delay_seconds"] = value }
+end
+
+begin
+  raise ArgumentError, "expected replay PATH" unless ARGV.shift == "replay"
+  parser.parse!(ARGV)
+  raise ArgumentError, "expected one JSONL path" unless ARGV.length == 1
+  events = []
+  File.foreach(ARGV.first).each_with_index do |line, index|
+    next if line.strip.empty?
+    record = JSON.parse(line)
+    raise ArgumentError, "line #{index + 1}: expected an object" unless record.is_a?(Hash)
+    events << record
+  end
+  puts JSON.pretty_generate(ZeroXDA::TradingLab::Replay.call(events, options))
+rescue ArgumentError, JSON::ParserError, Errno::ENOENT => error
+  warn "replay error: #{error.message}"
+  exit 2
+end
