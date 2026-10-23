@@ -17,9 +17,11 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["ruff>=0.14,<1.0"]
+market = ["websockets>=15,<17"]
 
 [project.scripts]
 trading-lab = "trading_lab.cli:main"
+trading-lab-market = "trading_lab.collectors.binance:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
