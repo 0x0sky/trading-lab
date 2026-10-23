@@ -15,7 +15,6 @@ from trading_lab.collectors.binance import (
 )
 from trading_lab.engine import replay
 
-
 RECEIVED = datetime(2026, 10, 23, 9, 7, 0, tzinfo=UTC)
 FRAME = {
     "stream": "btcusdt@ticker",
