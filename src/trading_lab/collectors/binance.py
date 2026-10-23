@@ -40,7 +40,7 @@ def stream_url(symbols: Sequence[str]) -> str:
 
 def _positive_string(value: object, field: str, *, allow_zero: bool = False) -> str:
     if not isinstance(value, str):
-        raise ValueError(f"{field} must be a decimal string")
+        raise TypeError(f"{field} must be a decimal string")
     try:
         number = Decimal(value)
     except (InvalidOperation, ValueError) as exc:
@@ -77,11 +77,11 @@ def normalize_ticker(
 
     payload = json.loads(message) if isinstance(message, (str, bytes)) else message
     if not isinstance(payload, Mapping):
-        raise ValueError("WebSocket frame must contain an object")
+        raise TypeError("WebSocket frame must contain an object")
     data = payload.get("data")
     stream = payload.get("stream")
     if not isinstance(data, Mapping) or not isinstance(stream, str):
-        raise ValueError("expected Binance combined stream envelope")
+        raise TypeError("expected Binance combined stream envelope")
     if data.get("e") == "serverShutdown":
         return None
     if data.get("e") != "24hrTicker":
@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
                 max_events=args.max_events,
             )
         )
-    except (OSError, RuntimeError, ValueError) as exc:
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
         print(f"collector error: {exc}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:
