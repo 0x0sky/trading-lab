@@ -10,3 +10,4 @@ dist/
 .env.*
 !.env.example
 *.sqlite3
+data/
