@@ -1,0 +1,9 @@
+.git
+.github
+.bundle
+vendor
+coverage
+test
+examples
+README.md
+*.log
