@@ -1,0 +1,43 @@
+# © 2026 aiaiaiai · aiaiaiai.org
+# SPDX-License-Identifier: MIT
+
+name: Validate deploy artifact
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build candidate container without publishing
+        run: docker build --tag market-trading-lab:validate .
+      - name: Validate private HTTP contract, without activation
+        run: |
+          set -Eeuo pipefail
+          docker run --detach --name trading-lab-candidate \
+            -p 127.0.0.1:1927:1927 -e TRADING_LAB_SERVICE_TOKEN=ci-only-secret \
+            market-trading-lab:validate
+          trap 'docker logs trading-lab-candidate || true; docker rm -f trading-lab-candidate || true' EXIT
+          healthy=false
+          for i in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:1927/health >/dev/null 2>&1; then
+              healthy=true
+              break
+            fi
+            sleep 1
+          done
+          test "$healthy" = true
+          test "$(curl -s -o /dev/null -w '%{http_code}' \
+            -X POST http://127.0.0.1:1927/v1/paper/replays \
+            -H 'Content-Type: application/json' -d '{"events":[]}')" = 401
+          curl --fail --silent --show-error \
+            -H 'Authorization: Bearer ci-only-secret' \
+            -H 'Content-Type: application/json' \
+            -d '{"events":[]}' http://127.0.0.1:1927/v1/paper/replays |
+            jq -e '.status == "ok" and (.data.fills | length) == 0'
