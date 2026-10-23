@@ -5,13 +5,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Iterable, Mapping
 
 
-BPS = Decimal("10000")
+BPS = Decimal(10000)
 
 
 @dataclass(frozen=True)
@@ -31,7 +31,7 @@ class Position:
 
 def _decimal(value: object, field: str, *, allow_zero: bool = False) -> Decimal:
     if isinstance(value, bool):
-        raise ValueError(f"{field} must be a decimal number")
+        raise TypeError(f"{field} must be a decimal number")
     try:
         number = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError) as exc:
@@ -51,12 +51,12 @@ def _text(event: Mapping[str, object], field: str) -> str:
 def _timestamp(event: Mapping[str, object]) -> datetime:
     raw = _text(event, "received_at")
     try:
-        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(raw)
     except ValueError as exc:
         raise ValueError("received_at must be ISO-8601") from exc
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError("received_at must include a timezone")
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def replay(
@@ -85,7 +85,7 @@ def replay(
         raise ValueError("max_delay_seconds must be a nonnegative integer")
 
     cash = initial
-    realized = Decimal("0")
+    realized = Decimal(0)
     positions: dict[str, Position] = {}
     latest: dict[str, Decimal] = {}
     pending: dict[str, list[Signal]] = {}
@@ -96,7 +96,7 @@ def replay(
 
     for index, event in enumerate(events, start=1):
         if not isinstance(event, Mapping):
-            raise ValueError(f"event {index} must be an object")
+            raise TypeError(f"event {index} must be an object")
         received = _timestamp(event)
         if previous_time is not None and received < previous_time:
             raise ValueError(f"event {index} is out of collection order")
@@ -142,7 +142,7 @@ def replay(
                 quantity = notional / execution_price
                 cash -= outlay
                 positions[symbol] = Position(quantity, outlay)
-                pnl = Decimal("0")
+                pnl = Decimal(0)
             else:
                 position = positions.pop(symbol, None)
                 if position is None:
@@ -172,7 +172,7 @@ def replay(
 
     equity = cash + sum(
         (position.quantity * latest[symbol] for symbol, position in positions.items()),
-        Decimal("0"),
+        Decimal(0),
     )
     return {
         "initial_cash": str(initial),

@@ -36,8 +36,8 @@ class ReplayTests(unittest.TestCase):
             fee_bps="0",
             slippage_bps="0",
         )
-        self.assertEqual(Decimal(result["net_pnl"]), Decimal("10"))
-        self.assertEqual(Decimal(result["realized_pnl"]), Decimal("10"))
+        self.assertEqual(Decimal(result["net_pnl"]), Decimal(10))
+        self.assertEqual(Decimal(result["realized_pnl"]), Decimal(10))
         self.assertEqual(len(result["fills"]), 2)
         self.assertEqual(result["open_positions"], {})
 

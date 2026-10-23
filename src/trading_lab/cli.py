@@ -8,8 +8,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Iterator, Mapping
 from pathlib import Path
-from typing import Iterator, Mapping
 
 from .engine import replay
 
@@ -24,7 +24,7 @@ def _records(path: Path) -> Iterator[Mapping[str, object]]:
             except json.JSONDecodeError as exc:
                 raise ValueError(f"line {number}: invalid JSON") from exc
             if not isinstance(event, dict):
-                raise ValueError(f"line {number}: expected a JSON object")
+                raise TypeError(f"line {number}: expected a JSON object")
             yield event
 
 
@@ -51,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
             max_allocation=args.max_allocation,
             max_delay_seconds=args.max_delay_seconds,
         )
-    except (OSError, ValueError) as exc:
+    except (OSError, TypeError, ValueError) as exc:
         print(f"replay error: {exc}", file=sys.stderr)
         return 2
 
