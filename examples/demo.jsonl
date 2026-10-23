@@ -1,0 +1,4 @@
+{"kind":"signal","id":"demo-1","source":"synthetic-example","symbol":"BTCUSDT","side":"buy","received_at":"2026-10-23T10:00:00+00:00"}
+{"kind":"tick","symbol":"BTCUSDT","price":"65000","received_at":"2026-10-23T10:00:01+00:00"}
+{"kind":"signal","id":"demo-2","source":"synthetic-example","symbol":"BTCUSDT","side":"sell","received_at":"2026-10-23T10:05:00+00:00"}
+{"kind":"tick","symbol":"BTCUSDT","price":"65500","received_at":"2026-10-23T10:05:01+00:00"}
