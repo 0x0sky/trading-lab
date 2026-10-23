@@ -55,9 +55,24 @@ future read-only Telegram / exchange adapters
 
 Adapters must never be allowed to place real orders in this repository's research runtime. Raw source events, timestamp provenance, and replay configuration will be persisted before any production-grade performance claims.
 
+## Live market collection (opt-in, read-only)
+
+The optional [Binance Spot market data collector](docs/market-data-collector.md)
+subscribes to BTC/USDT and ETH/USDT public ticker streams, appending source-
+attributed observations to local JSONL. It never authenticates or places orders.
+
+```sh
+python3.13 -m pip install -e ".[market]"
+trading-lab-market --max-events 10
+```
+
+Use `--symbol BTCUSDT --symbol ETHUSDT` to choose explicit pairs. The process
+connects to live public market data **only when launched locally**. Ticker
+snapshots are not guaranteed fills, nor historical tick-by-tick records.
+
 ## Next milestones
 
-1. Store immutable, source-attributed Telegram signals and market ticks in PostgreSQL with collector/clock metadata.
+1. Store immutable, source-attributed Telegram signals and collected market ticks in PostgreSQL with collector/clock metadata and gap tracking.
 2. Implement controlled, read-only Telegram and exchange adapters, plus backfill with explicit historical-data limitations.
 3. Compare multiple isolated strategies with walk-forward evaluation, portfolio drawdown, benchmark returns, execution costs, and sensitivity analysis.
 
